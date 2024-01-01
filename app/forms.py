@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FileField
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FileField, SelectField
 from wtforms.validators import DataRequired, Email, Length
 
 class RegistrationForm(FlaskForm):
@@ -21,5 +21,6 @@ class ArtistForm(FlaskForm):
 class CanvasForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     description = TextAreaField('Description')
+    artist_id = SelectField('Artist', coerce=int)
     image = FileField('Canvas Image')  # Assuming you handle image uploads
     submit = SubmitField('Submit Canvas')

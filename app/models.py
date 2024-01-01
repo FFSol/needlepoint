@@ -9,6 +9,8 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(120), nullable=False)
     stitch_lists = db.relationship('StitchList', backref='user', lazy='dynamic')
     comments = db.relationship('Comment', backref='user', lazy='dynamic')
+    canvas_votes = db.relationship('CanvasVote', backref='user', lazy='dynamic')
+    comment_votes = db.relationship('CommentVote', backref='user', lazy='dynamic')
 
 
 class Canvas(db.Model):
@@ -17,6 +19,9 @@ class Canvas(db.Model):
     description = db.Column(db.Text, nullable=True)
     artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
     image_url = db.Column(db.String(250))  # URL to the image of the canvas
+    stitch_lists = db.relationship('StitchList', backref='canvas', lazy='dynamic')
+    comments = db.relationship('Comment', backref='canvas', lazy='dynamic')
+    canvas_votes = db.relationship('CanvasVote', backref='canvas', lazy='dynamic')
 
 class Artist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,6 +40,18 @@ class Comment(db.Model):
     content = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     canvas_id = db.Column(db.Integer, db.ForeignKey('canvas.id'), nullable=False)
+    comment_votes = db.relationship('CommentVote', backref='comment', lazy='dynamic')
+
+class CanvasVote(db.Model):
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    canvas_id = db.Column(db.Integer, db.ForeignKey('canvas.id'), primary_key=True)
+    vote = db.Column(db.Integer)  # -1, 0, or 1 for downvote, no vote, or upvote
+
+class CommentVote(db.Model):
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comment.id'), primary_key=True)
+    vote = db.Column(db.Integer)  # -1, 0, or 1 for downvote, no vote, or upvote
+
     
 
 @login_manager.user_loader

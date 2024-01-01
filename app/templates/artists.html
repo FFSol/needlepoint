@@ -7,5 +7,6 @@
     {% for artist in artists %}
     <li><a href="{{ url_for('artist_detail', artist_id=artist.id) }}">{{ artist.name }}</a></li>
     {% endfor %}
+
 </ul>
 {% endblock %}
