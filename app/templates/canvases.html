@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Canvases</h1>
+<a href="{{ url_for('add_canvas') }}">Add New Canvas</a>
+<ul>
+    {% for canvas in canvases %}
+    <li>
+        <a href="{{ url_for('canvas_detail', canvas_id=canvas.id) }}">{{ canvas.title }}</a>
+        - by {{ canvas.artist.name }}
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>My Stitch List</h1>
+{% for item in stitch_list %}
+    <div>
+        <h2>{{ item.canvas.title }}</h2>
+        <p>Status: {{ item.status }}</p>
+        <!-- Add options to update status, remove from list, etc. -->
+    </div>
+{% endfor %}
+{% endblock %}

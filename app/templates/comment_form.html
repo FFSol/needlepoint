@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="post" action="{{ url_for('add_comment', canvas_id=canvas.id) }}">
+    <textarea name="content" required></textarea>
+    <input type="submit" value="Add Comment">
+</form>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>{{ canvas.title }}</h1>
+<p>{{ canvas.description }}</p>
+<img src="{{ canvas.image_url }}" alt="{{ canvas.title }}">
+
+<h2>Comments</h2>
+{% for comment in canvas.comments %}
+    <p>{{ comment.user.username }} says: {{ comment.content }}</p>
+{% endfor %}
+
+<!-- Add form for new comment here if the user is logged in -->
+{% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('add_comment', canvas_id=canvas.id) }}">
+        <textarea name="content" required></textarea>
+        <input type="submit" value="Add Comment">
+    </form>
+{% else %}
+    <p><a href="{{ url_for('login') }}">Log in</a> to add a comment.</p>
+{% endif %}
+{% endblock %}

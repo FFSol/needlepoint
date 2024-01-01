@@ -1,7 +1,7 @@
 from flask import render_template, url_for, redirect, flash, request
 from app import app, db
-from app.forms import LoginForm, RegistrationForm
-from app.models import User
+from app.forms import LoginForm, RegistrationForm, ArtistForm, CanvasForm
+from app.models import User, Canvas, Artist
 from flask_login import login_user, logout_user, current_user, login_required
 
 @app.route('/')
@@ -35,6 +35,51 @@ def login():
         else:
             flash('Login Unsuccessful. Please check email and password', 'danger')
     return render_template('login.html', title='Login', form=form)
+
+@app.route('/artists')
+def artists():
+    all_artists = Artist.query.all()
+    return render_template('artists.html', artists=all_artists)
+
+@app.route('/add_artist', methods=['GET', 'POST'])
+def add_artist():
+    form = ArtistForm()
+    if form.validate_on_submit():
+        new_artist = Artist(name=form.name.data, bio=form.bio.data)
+        db.session.add(new_artist)
+        db.session.commit()
+        return redirect(url_for('artists'))
+    return render_template('add_artist.html', form=form)
+
+@app.route('/add_canvas', methods=['GET', 'POST'])
+def add_canvas():
+    form = CanvasForm()
+    if form.validate_on_submit():
+        # Handle file upload here if 'image' field is used
+        new_canvas = Canvas(title=form.title.data, description=form.description.data)
+        # Set artist_id and image_url for the new canvas
+        db.session.add(new_canvas)
+        db.session.commit()
+        return redirect(url_for('canvases'))
+    return render_template('add_canvas.html', form=form)
+
+
+@app.route('/canvases')
+def canvases():
+    all_canvases = Canvas.query.all()
+    return render_template('canvases.html', canvases=all_canvases)
+
+@app.route('/canvas/<int:canvas_id>')
+def canvas_detail(canvas_id):
+    canvas = Canvas.query.get_or_404(canvas_id)
+    return render_template('canvas_detail.html', canvas=canvas)
+
+@app.route('/upload_canvas', methods=['POST'])
+def upload_canvas():
+    if 'file' not in request.files:
+        flash('No file part')
+        return redirect(request.url)
+    file = request.files['file']
 
 @app.route("/logout")
 def logout():

@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Artists</h1>
+<a href="{{ url_for('add_artist') }}">Add New Artist</a>
+<ul>
+    {% for artist in artists %}
+    <li><a href="{{ url_for('artist_detail', artist_id=artist.id) }}">{{ artist.name }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}

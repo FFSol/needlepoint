@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Add a New Canvas</h1>
+<form method="post" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.title.label }}<br>
+        {{ form.title(size=32) }}
+    </p>
+    <p>
+        {{ form.description.label }}<br>
+        {{ form.description(rows=4) }}
+    </p>
+    <p>
+        {{ form.image.label }}<br>
+        {{ form.image() }}
+    </p>
+    <p>{{ form.submit() }}</p>
+</form>
+{% endblock %}
