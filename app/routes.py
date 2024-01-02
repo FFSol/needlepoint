@@ -6,6 +6,7 @@ from app import app, db
 from app.forms import LoginForm, RegistrationForm, ArtistForm, CanvasForm
 from app.models import User, Canvas, Artist, Comment, CanvasVote, CommentVote
 from flask_login import login_user, logout_user, current_user, login_required
+from flask_wtf.csrf import generate_csrf
 
 @app.route('/')
 def index():
@@ -93,7 +94,6 @@ def add_canvas():
         return redirect(url_for('canvases'))
     return render_template('add_canvas.html', form=form)
 
-
 @app.route('/canvases')
 def canvases():
     all_canvases = Canvas.query.all()
@@ -102,14 +102,15 @@ def canvases():
 @app.route('/canvas/<int:canvas_id>')
 def canvas_detail(canvas_id):
     canvas = Canvas.query.get_or_404(canvas_id)
-    return render_template('canvas_detail.html', canvas=canvas)
+    csrf_token = generate_csrf()
+    
+    # Calculate canvas votes
+    canvas_vote_total = sum(vote.vote for vote in canvas.canvas_votes)
 
-@app.route('/upload_canvas', methods=['POST'])
-def upload_canvas():
-    if 'file' not in request.files:
-        flash('No file part')
-        return redirect(request.url)
-    file = request.files['file']
+    # Calculate comment votes
+    comment_vote_totals = {comment.id: sum(vote.vote for vote in comment.comment_votes) for comment in canvas.comments}
+
+    return render_template('canvas_detail.html', canvas=canvas, csrf_token=csrf_token, canvas_vote_total=canvas_vote_total, comment_vote_totals=comment_vote_totals)
 
 @app.route('/add_comment/<int:canvas_id>', methods=['POST'])
 def add_comment(canvas_id):
@@ -124,13 +125,13 @@ def add_comment(canvas_id):
 @login_required
 def vote_canvas(canvas_id, vote):
     canvas_vote = CanvasVote.query.filter_by(user_id=current_user.id, canvas_id=canvas_id).first()
-    
+
     if canvas_vote:
-        canvas_vote.vote = vote
+        canvas_vote.vote += vote  # Increment or decrement the vote
     else:
         new_vote = CanvasVote(user_id=current_user.id, canvas_id=canvas_id, vote=vote)
         db.session.add(new_vote)
-    
+
     db.session.commit()
     return redirect(url_for('canvas_detail', canvas_id=canvas_id))
 
@@ -138,15 +139,17 @@ def vote_canvas(canvas_id, vote):
 @login_required
 def vote_comment(comment_id, vote):
     comment_vote = CommentVote.query.filter_by(user_id=current_user.id, comment_id=comment_id).first()
-    
+
     if comment_vote:
-        comment_vote.vote = vote
+        comment_vote.vote += vote  # Increment or decrement the vote
     else:
         new_vote = CommentVote(user_id=current_user.id, comment_id=comment_id, vote=vote)
         db.session.add(new_vote)
-    
+
     db.session.commit()
-    return redirect(url_for('canvas_detail', canvas_id=Comment.query.get(comment_id).canvas_id))
+    comment = Comment.query.get(comment_id)
+    return redirect(url_for('canvas_detail', canvas_id=comment.canvas_id))
+
 
 @app.route("/logout")
 def logout():
