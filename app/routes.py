@@ -106,14 +106,61 @@ def add_canvas():
 def delete_canvas(canvas_id):
     canvas = Canvas.query.get_or_404(canvas_id)
 
-    # Additional security check: only allow deletion if the current user is the artist or an admin
-    # if canvas.artist.user_id != current_user.id:
-    #     abort(403)  # Forbidden
+    # Check if current user is the artist who created the canvas or an admin
+    if canvas.artist.user_id != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to delete this canvas.', 'danger')
+        return redirect(url_for('canvas_detail', canvas_id=canvas_id))
 
+    # Proceed with deletion
     db.session.delete(canvas)
     db.session.commit()
     flash('Canvas has been deleted', 'success')
     return redirect(url_for('canvases'))
+
+@app.route('/edit_canvas/<int:canvas_id>', methods=['GET', 'POST'])
+@login_required
+def edit_canvas(canvas_id):
+    canvas = Canvas.query.get_or_404(canvas_id)
+
+    # Check if current user is the artist who created the canvas or an admin
+    if canvas.artist.user_id != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to edit this canvas.', 'danger')
+        return redirect(url_for('canvas_detail', canvas_id=canvas_id))
+
+    form = CanvasForm(obj=canvas)
+    artists = Artist.query.all()
+
+    if not artists:
+        flash('No artists available. Please add an artist first.')
+        return redirect(url_for('add_artist'))
+    
+    form.artist_id.choices = [(artist.id, artist.name) for artist in artists]
+
+    if form.validate_on_submit():
+        # Handle image file
+        if form.image.data:
+            image_file = form.image.data
+            # Generate a random UUID filename
+            ext = os.path.splitext(image_file.filename)[1]
+            filename = str(uuid.uuid4()) + ext
+            save_path = os.path.join(app.root_path, 'static/canvas_images', filename)
+            image_file.save(save_path)
+
+            # Use a relative path for the URL
+            filepath = url_for('static', filename='canvas_images/' + filename)
+            canvas.image_url = filepath
+        else:
+            filepath = None
+
+        canvas.title = form.title.data
+        canvas.description = form.description.data
+        canvas.artist_id = form.artist_id.data
+
+        db.session.commit()
+        return redirect(url_for('canvas_detail', canvas_id=canvas_id))
+
+    return render_template('edit_canvas.html', form=form, canvas=canvas)
+
 
 @app.route('/canvases')
 def canvases():
@@ -125,13 +172,16 @@ def canvases():
 def canvas_detail(canvas_id):
     canvas = Canvas.query.get_or_404(canvas_id)
     csrf_token = generate_csrf()
-    
+
     canvas_vote_total = sum(vote.vote for vote in canvas.canvas_votes)
     comment_vote_totals = {comment.id: sum(vote.vote for vote in comment.comment_votes) for comment in canvas.comments}
 
-    # Check if current user has voted
-    user_canvas_vote = CanvasVote.query.filter_by(user_id=current_user.id, canvas_id=canvas_id).first()
-    user_comment_votes = {comment.id: CommentVote.query.filter_by(user_id=current_user.id, comment_id=comment.id).first() for comment in canvas.comments}
+    user_canvas_vote = None
+    user_comment_votes = {}
+
+    if current_user.is_authenticated:
+        user_canvas_vote = CanvasVote.query.filter_by(user_id=current_user.id, canvas_id=canvas_id).first()
+        user_comment_votes = {comment.id: CommentVote.query.filter_by(user_id=current_user.id, comment_id=comment.id).first() for comment in canvas.comments}
 
     return render_template('canvas_detail.html', 
                            canvas=canvas, 
@@ -140,6 +190,7 @@ def canvas_detail(canvas_id):
                            comment_vote_totals=comment_vote_totals,
                            user_canvas_vote=user_canvas_vote,
                            user_comment_votes=user_comment_votes)
+
 
 
 @app.route('/add_comment/<int:canvas_id>', methods=['POST'])

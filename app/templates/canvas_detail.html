@@ -10,39 +10,46 @@
     <span class="vote-count">{{ canvas_vote_total }}</span>
 
     <!-- Canvas Voting Section -->
-    <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote='up') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="vote-button {{ 'voted-up' if user_canvas_vote and user_canvas_vote.vote == 1 else '' }}"><i class="fa-solid fa-arrow-up"></i></button>
-    </form>
-    <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote='down') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="vote-button {{ 'voted-down' if user_canvas_vote and user_canvas_vote.vote == -1 else '' }}"><i class="fa-solid fa-arrow-down"></i></button>
-    </form>
+    {% if current_user.is_authenticated %}
+        <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote='up') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="vote-button {{ 'voted-up' if user_canvas_vote and user_canvas_vote.vote == 1 else '' }}"><i class="fa-solid fa-arrow-up"></i></button>
+        </form>
+        <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote='down') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="vote-button {{ 'voted-down' if user_canvas_vote and user_canvas_vote.vote == -1 else '' }}"><i class="fa-solid fa-arrow-down"></i></button>
+        </form>
+    {% endif %}
 </div>
 
 <h2>Comments</h2>
 {% for comment in canvas.comments %}
-    <p>{{ comment.user.username }} says: {{ comment.content }}</p>
-    
-    <div class="vote-section">
-        <!-- Display comment vote total -->
-        <span class="vote-count">{{ comment_vote_totals[comment.id] }}</span>
+    <div id="comment-{{ comment.id }}">
+        <p>{{ comment.user.username }} says: {{ comment.content }}</p>
+        
+        <div class="vote-section">
+            <!-- Display comment vote total -->
+            <span class="vote-count">{{ comment_vote_totals[comment.id] }}</span>
 
-        <!-- Comment Voting Section -->
-        <form action="{{ url_for('vote_comment', comment_id=comment.id, vote='up') }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="vote-button {{ 'voted-up' if user_comment_votes[comment.id] and user_comment_votes[comment.id].vote == 1 else '' }}"><i class="fa-solid fa-arrow-up"></i></button>
-        </form>
-        <form action="{{ url_for('vote_comment', comment_id=comment.id, vote='down') }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <button type="submit" class="vote-button {{ 'voted-down' if user_comment_votes[comment.id] and user_comment_votes[comment.id].vote == -1 else '' }}"><i class="fa-solid fa-arrow-down"></i></button>
-        </form>
+            <!-- Comment Voting Section -->
+            {% if current_user.is_authenticated %}
+                <form action="{{ url_for('vote_comment', comment_id=comment.id, vote='up') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="vote-button {{ 'voted-up' if user_comment_votes[comment.id] and user_comment_votes[comment.id].vote == 1 else '' }}"><i class="fa-solid fa-arrow-up"></i></button>
+                </form>
+                <form action="{{ url_for('vote_comment', comment_id=comment.id, vote='down') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="vote-button {{ 'voted-down' if user_comment_votes[comment.id] and user_comment_votes[comment.id].vote == -1 else '' }}"><i class="fa-solid fa-arrow-down"></i></button>
+                </form>
+            {% endif %}
+        </div>
     </div>
 {% endfor %}
 
 <!-- Add form for new comment here if the user is logged in -->
 {% if current_user.is_authenticated %}
     <form method="post" action="{{ url_for('add_comment', canvas_id=canvas.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <textarea name="comment" required></textarea>
         <input type="submit" value="Add Comment">
     </form>

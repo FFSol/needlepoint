@@ -8,11 +8,13 @@
     <li>
         <a href="{{ url_for('canvas_detail', canvas_id=canvas.id) }}">{{ canvas.title }}</a>
         - by {{ canvas.artist.name }}
+        {% if current_user.is_authenticated and (canvas.artist.user_id == current_user.id or current_user.is_admin) %}
+            <form action="{{ url_for('delete_canvas', canvas_id=canvas.id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn-delete">Delete</button>
+            </form>
+        {% endif %}
     </li>
-    <form action="{{ url_for('delete_canvas', canvas_id=canvas.id) }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="btn-delete">Delete</button>
-    </form>
     {% endfor %}
 </ul>
 
@@ -30,4 +32,3 @@
     });
 </script>
 {% endblock %}
-
