@@ -1,7 +1,6 @@
 from flask import render_template, url_for, redirect, flash, request
 from werkzeug.utils import secure_filename
-import os
-import uuid
+import os, uuid, random
 
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, ArtistForm, CanvasForm
@@ -11,7 +10,9 @@ from flask_wtf.csrf import generate_csrf
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    all_canvases = Canvas.query.all()
+    featured_canvases = random.sample(all_canvases, min(len(all_canvases), 4))  # Select 7 random canvases
+    return render_template('index.html', featured_canvases=featured_canvases)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -100,23 +101,46 @@ def add_canvas():
         return redirect(url_for('canvases'))
     return render_template('add_canvas.html', form=form)
 
+@app.route('/delete_canvas/<int:canvas_id>', methods=['POST'])
+@login_required
+def delete_canvas(canvas_id):
+    canvas = Canvas.query.get_or_404(canvas_id)
+
+    # Additional security check: only allow deletion if the current user is the artist or an admin
+    # if canvas.artist.user_id != current_user.id:
+    #     abort(403)  # Forbidden
+
+    db.session.delete(canvas)
+    db.session.commit()
+    flash('Canvas has been deleted', 'success')
+    return redirect(url_for('canvases'))
+
 @app.route('/canvases')
 def canvases():
     all_canvases = Canvas.query.all()
-    return render_template('canvases.html', canvases=all_canvases)
+    csrf_token = generate_csrf()
+    return render_template('canvases.html', canvases=all_canvases, csrf_token=csrf_token)
 
 @app.route('/canvas/<int:canvas_id>')
 def canvas_detail(canvas_id):
     canvas = Canvas.query.get_or_404(canvas_id)
     csrf_token = generate_csrf()
     
-    # Calculate canvas votes
     canvas_vote_total = sum(vote.vote for vote in canvas.canvas_votes)
-
-    # Calculate comment votes
     comment_vote_totals = {comment.id: sum(vote.vote for vote in comment.comment_votes) for comment in canvas.comments}
 
-    return render_template('canvas_detail.html', canvas=canvas, csrf_token=csrf_token, canvas_vote_total=canvas_vote_total, comment_vote_totals=comment_vote_totals)
+    # Check if current user has voted
+    user_canvas_vote = CanvasVote.query.filter_by(user_id=current_user.id, canvas_id=canvas_id).first()
+    user_comment_votes = {comment.id: CommentVote.query.filter_by(user_id=current_user.id, comment_id=comment.id).first() for comment in canvas.comments}
+
+    return render_template('canvas_detail.html', 
+                           canvas=canvas, 
+                           csrf_token=csrf_token, 
+                           canvas_vote_total=canvas_vote_total, 
+                           comment_vote_totals=comment_vote_totals,
+                           user_canvas_vote=user_canvas_vote,
+                           user_comment_votes=user_comment_votes)
+
 
 @app.route('/add_comment/<int:canvas_id>', methods=['POST'])
 @login_required
@@ -135,22 +159,21 @@ def vote_canvas(canvas_id, vote):
 
     if not canvas_vote:
         # User hasn't voted yet, create a new vote
-        if vote == 'up':
-            new_vote = 1
-        elif vote == 'down':
-            new_vote = -1
-        else:
-            return redirect(url_for('canvas_detail', canvas_id=canvas_id))  # Invalid vote
-
+        new_vote = 1 if vote == 'up' else -1
         canvas_vote = CanvasVote(user_id=current_user.id, canvas_id=canvas_id, vote=new_vote)
         db.session.add(canvas_vote)
     else:
-        # User has already voted, update their vote
-        if (vote == 'up' and canvas_vote.vote < 1) or (vote == 'down' and canvas_vote.vote > -1):
-            canvas_vote.vote = 0 if canvas_vote.vote == (1 if vote == 'up' else -1) else (1 if vote == 'up' else -1)
+        # User has already voted
+        if (vote == 'up' and canvas_vote.vote == 1) or (vote == 'down' and canvas_vote.vote == -1):
+            # Remove vote
+            canvas_vote.vote = 0
+        else:
+            # Change vote
+            canvas_vote.vote = 1 if vote == 'up' else -1
 
     db.session.commit()
     return redirect(url_for('canvas_detail', canvas_id=canvas_id))
+
 
 @app.route('/vote_comment/<int:comment_id>/<vote>', methods=['POST'])
 @login_required
@@ -160,19 +183,17 @@ def vote_comment(comment_id, vote):
 
     if not comment_vote:
         # User hasn't voted yet, create a new vote
-        if vote == 'up':
-            new_vote = 1
-        elif vote == 'down':
-            new_vote = -1
-        else:
-            return redirect(url_for('canvas_detail', canvas_id=comment.canvas_id))  # Invalid vote
-
+        new_vote = 1 if vote == 'up' else -1
         comment_vote = CommentVote(user_id=current_user.id, comment_id=comment_id, vote=new_vote)
         db.session.add(comment_vote)
     else:
-        # User has already voted, update their vote
-        if (vote == 'up' and comment_vote.vote < 1) or (vote == 'down' and comment_vote.vote > -1):
-            comment_vote.vote = 0 if comment_vote.vote == (1 if vote == 'up' else -1) else (1 if vote == 'up' else -1)
+        # User has already voted
+        if (vote == 'up' and comment_vote.vote == 1) or (vote == 'down' and comment_vote.vote == -1):
+            # Remove vote
+            comment_vote.vote = 0
+        else:
+            # Change vote
+            comment_vote.vote = 1 if vote == 'up' else -1
 
     db.session.commit()
     return redirect(url_for('canvas_detail', canvas_id=comment.canvas_id))

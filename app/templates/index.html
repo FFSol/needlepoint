@@ -1,7 +1,22 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Welcome to Needlepoint Hub</h1>
+<h1>Welcome to the Needlepoint Project</h1>
 <p>Explore our collection of needlepoint canvases and learn from artists.</p>
-<!-- Add more homepage-specific content here -->
+
+<h2>Featured Canvases</h2>
+
+<div class="canvas-grid">
+    {% for canvas in featured_canvases %}
+    <div class="canvas-item">
+        <a href="{{ url_for('canvas_detail', canvas_id=canvas.id) }}">
+            <img src="{{ canvas.image_url or url_for('static', filename='images/placeholder.png') }}" alt="{{ canvas.title }}">
+        </a>
+        <div class="canvas-description">
+            <p>{{ canvas.title }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
 {% endblock %}

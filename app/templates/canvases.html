@@ -9,6 +9,25 @@
         <a href="{{ url_for('canvas_detail', canvas_id=canvas.id) }}">{{ canvas.title }}</a>
         - by {{ canvas.artist.name }}
     </li>
+    <form action="{{ url_for('delete_canvas', canvas_id=canvas.id) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn-delete">Delete</button>
+    </form>
     {% endfor %}
 </ul>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const deleteButtons = document.querySelectorAll('.btn-delete');
+
+        deleteButtons.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                if (!confirm('Are you sure you want to delete this canvas?')) {
+                    event.preventDefault();
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}
+

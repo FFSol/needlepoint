@@ -21,7 +21,7 @@ class Canvas(db.Model):
     image_url = db.Column(db.String(250))  # URL to the image of the canvas
     stitch_lists = db.relationship('StitchList', backref='canvas', lazy='dynamic')
     comments = db.relationship('Comment', backref='canvas', lazy='dynamic')
-    canvas_votes = db.relationship('CanvasVote', backref='canvas', lazy='dynamic')
+    canvas_votes = db.relationship('CanvasVote', backref='canvas', lazy='dynamic', cascade='all, delete-orphan')
 
 class Artist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,7 +39,7 @@ class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    canvas_id = db.Column(db.Integer, db.ForeignKey('canvas.id'), nullable=False)
+    canvas_id = db.Column(db.Integer, db.ForeignKey('canvas.id', ondelete='CASCADE'), nullable=False)
     comment_votes = db.relationship('CommentVote', backref='comment', lazy='dynamic')
 
 class CanvasVote(db.Model):

@@ -3,31 +3,46 @@
 <head>
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
     <title>Needlepoint Hub</title>
-    <!-- Add any other head elements here, like CSS links -->
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="{{ url_for('index') }}">Home</a></li>
-                <li><a href="{{ url_for('canvases') }}">Canvases</a></li>
-                <li><a href="{{ url_for('artists') }}">Artists</a></li>
-                <!-- Add more links as needed -->
-                {% if current_user.is_authenticated %}
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                {% else %}
-                    <li><a href="{{ url_for('login') }}">Login</a></li>
-                    <li><a href="{{ url_for('register') }}">Register</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </header>
+    <!-- Heading Bar -->
+    <div class="heading-bar">
+        <button class="hamburger" onclick="toggleMenu()">&#9776;</button>
+        <h1>The Needlepoint Project</h1>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeMenu()">&times;</a>
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('canvases') }}">Canvases</a>
+        <a href="{{ url_for('artists') }}">Artists</a>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+    </div>
+
     <main>
         {% block content %}{% endblock %}
     </main>
+
     <footer>
         <!-- Add footer content here -->
     </footer>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById("sidebar").style.width = "250px";
+        }
+
+        function closeMenu() {
+            document.getElementById("sidebar").style.width = "0";
+        }
+    </script>
 </body>
 </html>
