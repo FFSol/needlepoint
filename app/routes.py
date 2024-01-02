@@ -1,6 +1,7 @@
 from flask import render_template, url_for, redirect, flash, request
 from werkzeug.utils import secure_filename
 import os
+import uuid
 
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, ArtistForm, CanvasForm
@@ -75,9 +76,14 @@ def add_canvas():
         # Handle image file
         if form.image.data:
             image_file = form.image.data
-            filename = secure_filename(image_file.filename)
-            filepath = os.path.join(app.root_path, 'static/canvas_images', filename)
-            image_file.save(filepath)
+            # Generate a random UUID filename
+            ext = os.path.splitext(image_file.filename)[1]
+            filename = str(uuid.uuid4()) + ext
+            save_path = os.path.join(app.root_path, 'static/canvas_images', filename)
+            image_file.save(save_path)
+
+            # Use a relative path for the URL
+            filepath = url_for('static', filename='canvas_images/' + filename)
         else:
             filepath = None
 
@@ -113,6 +119,7 @@ def canvas_detail(canvas_id):
     return render_template('canvas_detail.html', canvas=canvas, csrf_token=csrf_token, canvas_vote_total=canvas_vote_total, comment_vote_totals=comment_vote_totals)
 
 @app.route('/add_comment/<int:canvas_id>', methods=['POST'])
+@login_required
 def add_comment(canvas_id):
     # Assume 'comment' is the name of the form field for the comment content
     comment_content = request.form.get('comment')
@@ -121,33 +128,53 @@ def add_comment(canvas_id):
     db.session.commit()
     return redirect(url_for('canvas_detail', canvas_id=canvas_id))
 
-@app.route('/vote_canvas/<int:canvas_id>/<int:vote>', methods=['POST'])
+@app.route('/vote_canvas/<int:canvas_id>/<vote>', methods=['POST'])
 @login_required
 def vote_canvas(canvas_id, vote):
     canvas_vote = CanvasVote.query.filter_by(user_id=current_user.id, canvas_id=canvas_id).first()
 
-    if canvas_vote:
-        canvas_vote.vote += vote  # Increment or decrement the vote
+    if not canvas_vote:
+        # User hasn't voted yet, create a new vote
+        if vote == 'up':
+            new_vote = 1
+        elif vote == 'down':
+            new_vote = -1
+        else:
+            return redirect(url_for('canvas_detail', canvas_id=canvas_id))  # Invalid vote
+
+        canvas_vote = CanvasVote(user_id=current_user.id, canvas_id=canvas_id, vote=new_vote)
+        db.session.add(canvas_vote)
     else:
-        new_vote = CanvasVote(user_id=current_user.id, canvas_id=canvas_id, vote=vote)
-        db.session.add(new_vote)
+        # User has already voted, update their vote
+        if (vote == 'up' and canvas_vote.vote < 1) or (vote == 'down' and canvas_vote.vote > -1):
+            canvas_vote.vote = 0 if canvas_vote.vote == (1 if vote == 'up' else -1) else (1 if vote == 'up' else -1)
 
     db.session.commit()
     return redirect(url_for('canvas_detail', canvas_id=canvas_id))
 
-@app.route('/vote_comment/<int:comment_id>/<int:vote>', methods=['POST'])
+@app.route('/vote_comment/<int:comment_id>/<vote>', methods=['POST'])
 @login_required
 def vote_comment(comment_id, vote):
     comment_vote = CommentVote.query.filter_by(user_id=current_user.id, comment_id=comment_id).first()
+    comment = Comment.query.get_or_404(comment_id)
 
-    if comment_vote:
-        comment_vote.vote += vote  # Increment or decrement the vote
+    if not comment_vote:
+        # User hasn't voted yet, create a new vote
+        if vote == 'up':
+            new_vote = 1
+        elif vote == 'down':
+            new_vote = -1
+        else:
+            return redirect(url_for('canvas_detail', canvas_id=comment.canvas_id))  # Invalid vote
+
+        comment_vote = CommentVote(user_id=current_user.id, comment_id=comment_id, vote=new_vote)
+        db.session.add(comment_vote)
     else:
-        new_vote = CommentVote(user_id=current_user.id, comment_id=comment_id, vote=vote)
-        db.session.add(new_vote)
+        # User has already voted, update their vote
+        if (vote == 'up' and comment_vote.vote < 1) or (vote == 'down' and comment_vote.vote > -1):
+            comment_vote.vote = 0 if comment_vote.vote == (1 if vote == 'up' else -1) else (1 if vote == 'up' else -1)
 
     db.session.commit()
-    comment = Comment.query.get(comment_id)
     return redirect(url_for('canvas_detail', canvas_id=comment.canvas_id))
 
 

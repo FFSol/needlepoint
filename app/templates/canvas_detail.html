@@ -3,18 +3,27 @@
 {% block content %}
 <h1>{{ canvas.title }}</h1>
 <p>{{ canvas.description }}</p>
-<img src="{{ canvas.image_url }}" alt="{{ canvas.title }}">
+
+<!-- Canvas Image with Clickable Overlay -->
+<a href="{{ canvas.image_url }}" onclick="showImage(event)">
+    <img src="{{ canvas.image_url }}" alt="{{ canvas.title }}" class="canvas-thumbnail">
+</a>
+
+<!-- Image Overlay (initially hidden) -->
+<div id="image-overlay" onclick="hideImage()">
+    <img id="large-image" src="" alt="Large Image">
+</div>
 
 <div class="vote-section">
     <!-- Display canvas vote total -->
     <span class="vote-count">{{ canvas_vote_total }}</span>
 
     <!-- Canvas Voting Section -->
-    <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote=1) }}" method="post">
+    <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote='up') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="vote-button"><i class="fa-solid fa-arrow-up"></i></button>
     </form>
-    <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote=-1) }}" method="post">
+    <form action="{{ url_for('vote_canvas', canvas_id=canvas.id, vote='down') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="vote-button"><i class="fa-solid fa-arrow-down"></i></button>
     </form>
@@ -29,11 +38,11 @@
         <span class="vote-count">{{ comment_vote_totals[comment.id] }}</span>
 
         <!-- Comment Voting Section -->
-        <form action="{{ url_for('vote_comment', comment_id=comment.id, vote=1) }}" method="post">
+        <form action="{{ url_for('vote_comment', comment_id=comment.id, vote='up') }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button type="submit" class="vote-button"><i class="fa-solid fa-arrow-up"></i></button>
         </form>
-        <form action="{{ url_for('vote_comment', comment_id=comment.id, vote=-1) }}" method="post">
+        <form action="{{ url_for('vote_comment', comment_id=comment.id, vote='down') }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <button type="submit" class="vote-button"><i class="fa-solid fa-arrow-down"></i></button>
         </form>
@@ -43,6 +52,7 @@
 <!-- Add form for new comment here if the user is logged in -->
 {% if current_user.is_authenticated %}
     <form method="post" action="{{ url_for('add_comment', canvas_id=canvas.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <textarea name="comment" required></textarea>
         <input type="submit" value="Add Comment">
     </form>
@@ -50,3 +60,19 @@
     <p><a href="{{ url_for('login') }}">Log in</a> to add a comment.</p>
 {% endif %}
 {% endblock %}
+
+<script>
+    function showImage(event) {
+        event.preventDefault(); // Prevent default link behavior
+        var imageUrl = event.currentTarget.getAttribute('href');
+        var overlay = document.getElementById('image-overlay');
+        var largeImage = document.getElementById('large-image');
+        largeImage.src = imageUrl;
+        overlay.style.display = 'flex'; // Show the overlay
+    }
+
+    function hideImage() {
+        var overlay = document.getElementById('image-overlay');
+        overlay.style.display = 'none'; // Hide the overlay
+    }
+</script>

@@ -24,3 +24,31 @@
 .vote-button i {
     color: #4a90e2; /* Change the color as needed */
 }
+
+/* Style for the thumbnail image */
+.canvas-thumbnail {
+    max-width: 300px; /* Adjust size as needed */
+    height: auto;
+    cursor: pointer;
+}
+
+/* Overlay styles */
+#image-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#image-overlay img {
+    max-height: 80%;
+    max-width: 80%;
+}
+
